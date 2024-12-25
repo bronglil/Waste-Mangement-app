@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">WMS</string>
+    <string name="title_activity_sign_up_activity.kt">SignUpActivity.kt</string>
+    <string name="title_activity_sign_up">SignUpActivity</string>
+    <string name="title_activity_showbin_status">ShowbinStatusActivity</string>
+    <string name="title_activity_single_bin_details_acitivity">SingleBinDetailsAcitivity</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="title_activity_user_profile">UserProfileActivity</string>
+</resources>
