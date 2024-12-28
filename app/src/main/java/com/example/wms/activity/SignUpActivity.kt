@@ -1,9 +1,8 @@
 package com.example.wms.activity
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +43,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.wms.utils.ToastUtils.showToastAtTop
 
 class SignUpActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,13 +55,30 @@ class SignUpActivity : ComponentActivity() {
     }
 }
 
+sealed class SignUpState {
+    object Idle : SignUpState()
+    object Loading : SignUpState()
+    data class Success(
+        val firstName: String,
+        val lastName: String,
+        val email: String,
+        val token: String
+    ) : SignUpState()
+    sealed class Error : SignUpState() {
+        data class ValidationError(val errors: Map<String, String>) : Error()
+        data class NetworkError(val message: String) : Error()
+        data class UnknownError(val message: String) : Error()
+    }
+}
+
 @Composable
 fun SignUpScreen() {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
-    var mobile by remember { mutableStateOf("") }
+    var contactNumber by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var signUpState by remember { mutableStateOf<SignUpState>(SignUpState.Idle) }
     val context = LocalContext.current
 
     Column(
@@ -81,24 +99,42 @@ fun SignUpScreen() {
                     .fillMaxWidth()
             ) {
                 InputField(value = firstName, label = "First Name") { firstName = it }
+
+
                 InputField(value = lastName, label = "Last Name") { lastName = it }
-                InputField(value = mobile, label = "Contact Number", keyboardType = KeyboardType.Phone) { mobile = it }
+
+
+                InputField(value = contactNumber, label = "Contact Number", keyboardType = KeyboardType.Phone) { contactNumber = it }
+                Text(
+                    text = "Contact number should be valid start with country code +33",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+
                 InputField(value = email, label = "Email", keyboardType = KeyboardType.Email) { email = it }
+
+
                 InputField(value = password, label = "Password", keyboardType = KeyboardType.Password) { password = it }
+                Text(
+                    text = "Password must be greater than 8 digit long include at least one digit, one lowercase letter, one uppercase letter, one special character, and no whitespace.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = {
-                        if (validateInputs(firstName, lastName, mobile, email, password, context)) {
+                        if (validateInputs(firstName, lastName, contactNumber, email, password, context)) {
                             signUpUser(
                                 request = SignUpRequest(
                                     firstName = firstName,
                                     lastName = lastName,
-                                    mobile = mobile,
+                                    contactNumber = contactNumber,
                                     email = email,
                                     password = password
                                 ),
+                                onStateChange = { state -> signUpState = state },
                                 context = context
                             )
                         }
@@ -121,6 +157,30 @@ fun SignUpScreen() {
                             context.startActivity(Intent(context, LoginActivity::class.java))
                         }
                 )
+
+                // Handle different states
+                LaunchedEffect(signUpState) {
+                    when (signUpState) {
+                        is SignUpState.Success -> {
+                            val successState = signUpState as SignUpState.Success
+                            showToastAtTop(context, "Sign up successful!")
+                            context.startActivity(Intent(context, LoginActivity::class.java))
+                        }
+                        is SignUpState.Error.ValidationError -> {
+                            val errors = (signUpState as SignUpState.Error.ValidationError).errors
+                            errors.forEach { (field, message) ->
+                                showToastAtTop(context, "$field: $message")
+                            }
+                        }
+                        is SignUpState.Error.NetworkError -> {
+                            showToastAtTop(context, (signUpState as SignUpState.Error.NetworkError).message)
+                        }
+                        is SignUpState.Error.UnknownError -> {
+                            showToastAtTop(context, (signUpState as SignUpState.Error.UnknownError).message)
+                        }
+                        else -> { /* Handle other states if needed */ }
+                    }
+                }
             }
         }
     }
@@ -154,59 +214,89 @@ fun InputField(
 fun validateInputs(
     firstName: String,
     lastName: String,
-    mobile: String,
+    contactNumber: String,
     email: String,
     password: String,
-    context: android.content.Context
+    context: Context
 ): Boolean {
-    if (firstName.isBlank() || lastName.isBlank() || mobile.isBlank() || email.isBlank() || password.isBlank()) {
-        Toast.makeText(context, "All fields are required!", Toast.LENGTH_LONG).show()
+    if (firstName.isBlank() || lastName.isBlank() || contactNumber.isBlank() || email.isBlank() || password.isBlank()) {
+        showToastAtTop(context, "All fields are required!")
         return false
     }
-    if (!android.util.Patterns.PHONE.matcher(mobile).matches()) {
-        Toast.makeText(context, "Invalid contact number!", Toast.LENGTH_LONG).show()
+    if (!android.util.Patterns.PHONE.matcher(contactNumber).matches()) {
+        showToastAtTop(context, "Invalid contact number!")
         return false
     }
     if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-        Toast.makeText(context, "Invalid email address!", Toast.LENGTH_LONG).show()
+        showToastAtTop(context, "Invalid email address!")
         return false
     }
     if (password.length < 8) {
-        Toast.makeText(context, "Password must be at least 8 characters long!", Toast.LENGTH_LONG).show()
+        showToastAtTop(context, "Password must be at least 8 characters long!")
         return false
     }
     return true
 }
-
-fun signUpUser(request: SignUpRequest, context: android.content.Context) {
+fun signUpUser(
+    request: SignUpRequest,
+    onStateChange: (SignUpState) -> Unit,
+    context: Context
+) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
-            val response = RetrofitInstance.api.signUpSuspend(request)
+            onStateChange(SignUpState.Loading)
+
+            val staticRequest = request.copy(
+                userRole = "DRIVER",
+                userStatus = "PENDING"
+            )
+
+            val response = RetrofitInstance.api.signUpAuthSuspend(staticRequest)
+
             withContext(Dispatchers.Main) {
-                if (response.success) {
-                    Toast.makeText(
-                        context,
-                        "Sign Up Successful: ${response.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    context.startActivity(Intent(context, LoginActivity::class.java))
-                } else {
-                    Toast.makeText(
-                        context,
-                        "Sign Up Failed: ${response.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                when {
+                    response.errors != null -> {
+                        // Handle validation errors
+                        onStateChange(SignUpState.Error.ValidationError(response.errors))
+                    }
+                    response.token != null -> {
+                        // Handle success case
+                        onStateChange(SignUpState.Success(
+                            firstName = response.firstName ?: "",
+                            lastName = response.lastName ?: "",
+                            email = response.email ?: "",
+                            token = response.token
+                        ))
+                    }
+                    else -> {
+                        // Handle unexpected response
+                        onStateChange(SignUpState.Error.UnknownError(
+                            response.message ?: "Unknown error occurred"
+                        ))
+                    }
                 }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    context,
-                    "Error: ${e.localizedMessage ?: "Something went wrong"}",
-                    Toast.LENGTH_LONG
-                ).show()
-                Log.e("SignUpError", "Exception occurred", e)
+                val errorMessage = when (e) {
+                    is java.net.UnknownHostException -> "No internet connection"
+                    is java.net.SocketTimeoutException -> "Connection timed out"
+                    is retrofit2.HttpException -> {
+                        when (e.code()) {
+                            400 -> "Invalid request"
+                            401 -> "Unauthorized"
+                            403 -> "Forbidden"
+                            404 -> "Not found"
+                            500 -> "Server error"
+                            else -> "Network error: ${e.code()}"
+                        }
+                    }
+                    else -> "An unexpected error occurred: ${e.message}"
+                }
+                onStateChange(SignUpState.Error.NetworkError(errorMessage))
             }
         }
     }
 }
+
+

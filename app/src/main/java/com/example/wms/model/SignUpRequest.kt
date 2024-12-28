@@ -3,7 +3,10 @@ package com.example.wms.model
 data class SignUpRequest(
     val firstName: String,
     val lastName: String,
-    val mobile: String,
+    val contactNumber: String,
     val email: String,
-    val password: String
+    val password: String,
+    val userRole: String = "DRIVER",
+    val userStatus: String = "PENDING"
 )
+
