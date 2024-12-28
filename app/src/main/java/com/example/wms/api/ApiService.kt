@@ -1,6 +1,7 @@
 package com.example.wms.api
 
 
+import com.example.wms.model.Bin
 import com.example.wms.model.SignUpRequest
 import com.example.wms.viewmodel.BinDetails
 import okhttp3.ResponseBody
@@ -25,7 +26,8 @@ interface ApiService {
     @GET("api/bins/{id}")
     fun getBinDetails(@Path("id") binId: Int): Call<BinDetails>
 
-    // Coroutine-based method for fetching bin details
-    @GET("api/bins/{id}")
-    suspend fun getBinDetailsSuspend(@Path("id") binId: Int): BinDetails
+    @GET("api/bins")
+    fun getAllBins(): Call<List<Bin>>
+
+
 }
