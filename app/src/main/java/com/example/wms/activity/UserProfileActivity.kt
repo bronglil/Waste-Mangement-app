@@ -72,7 +72,7 @@ class UserProfileActivity : ComponentActivity() {
                     activeScreen = navigateTo
                     when (navigateTo) {
                         "Home" -> {
-                            startActivity(Intent(this@UserProfileActivity, SingleBinDetailsActivity::class.java))
+                            startActivity(Intent(this@UserProfileActivity, AllBinsActivity::class.java))
                         }
                         "Profile" -> {
                             // Stay on current screen
