@@ -25,6 +25,7 @@
             android:exported="false"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.WMS" />
+
         <activity
             android:name=".activity.SingleBinDetailsActivity"
             android:exported="true"
@@ -39,9 +40,9 @@
             android:theme="@style/Theme.WMS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
         <activity
             android:name=".activity.MainActivity"
