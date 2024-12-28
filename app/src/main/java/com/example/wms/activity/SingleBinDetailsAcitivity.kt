@@ -27,7 +27,7 @@ import java.util.*
 
 class SingleBinDetailsActivity : ComponentActivity() {
     private val TAG = "API Request"
-    private val binId: Int = 17
+    private val binId: Int = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
