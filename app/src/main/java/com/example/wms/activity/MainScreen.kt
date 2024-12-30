@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.wms.model.Bin
-import com.example.wms.ui.NavigationMenu
 import com.example.wms.viewmodel.BinViewModel
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*

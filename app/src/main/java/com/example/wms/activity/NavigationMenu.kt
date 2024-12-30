@@ -2,6 +2,7 @@ package com.example.wms.activity
 
 import EditProfileScreen
 import MainScreen
+import MapWithDirections
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -31,6 +32,7 @@ fun SetupNavGraph(navController: NavHostController, viewModel: UserProfileViewMo
                 onBackClick = {
                     navController.popBackStack()
                 },
+                navController = navController
             )
         }
         composable(
@@ -38,7 +40,12 @@ fun SetupNavGraph(navController: NavHostController, viewModel: UserProfileViewMo
             arguments = listOf(navArgument("binId") { type = NavType.LongType })
         ) { backStackEntry ->
             val binId = backStackEntry.arguments?.getLong("binId") ?: return@composable
-            BinDetailsScreen(binId = binId.toInt(), onBack = { navController.popBackStack() })
+            BinDetailsScreen(
+                binId = binId.toInt(), onBack = { navController.popBackStack() },
+                onNavigateToMap = { latitude, longitude ->
+                    navController.navigate("map/$latitude/$longitude")
+                }
+            )
         }
         composable("editProfile") {
             val context = LocalContext.current // Get the context
@@ -66,6 +73,22 @@ fun SetupNavGraph(navController: NavHostController, viewModel: UserProfileViewMo
                     onCancelClick = { navController.popBackStack() }
                 )
             }
+        }
+        composable(
+            "map/{latitude}/{longitude}",
+            arguments = listOf(
+                navArgument("latitude") { type = NavType.FloatType },
+                navArgument("longitude") { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val latitude = backStackEntry.arguments?.getFloat("latitude") ?: 0f
+            val longitude = backStackEntry.arguments?.getFloat("longitude") ?: 0f
+
+            MapWithDirections(
+                destinationLat = latitude.toDouble(),
+                destinationLng = longitude.toDouble(),
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -17,7 +17,7 @@ object RetrofitInstance {
 
     val api: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("http://192.168.1.149:8080/") // Use 10.0.2.2 for emulator
+            .baseUrl("http://192.168.43.242:8080/") // Use 10.0.2.2 for emulator
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

@@ -87,4 +87,9 @@ dependencies {
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
 
+//    implementation(libs.maps.compose)
+//    implementation(libs.play.services.maps.v1810)
+    implementation(libs.play.services.location)
+    implementation(libs.google.maps.services)
+
 }
