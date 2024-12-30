@@ -7,9 +7,11 @@ import com.example.wms.model.SignUpRequest
 import com.example.wms.viewmodel.BinDetails
 import okhttp3.ResponseBody
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 
@@ -22,6 +24,9 @@ interface ApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
 
+    @GET("/api/drivers/{id}")
+    suspend fun getDriverDetails(@Path("id") userId: Int): LoginResponse
+
     // Callback-based method for fetching bin details
     @GET("api/bins/{id}")
     fun getBinDetails(@Path("id") binId: Int): Call<BinDetails>
@@ -29,5 +34,7 @@ interface ApiService {
     @GET("api/bins")
     fun getAllBins(): Call<List<Bin>>
 
+    @PUT("/api/drivers/{id}")
+    suspend fun updateUserProfile(@Path("id") id: Int, @Body updatedUser: UserData): Response<LoginResponse>
 
 }

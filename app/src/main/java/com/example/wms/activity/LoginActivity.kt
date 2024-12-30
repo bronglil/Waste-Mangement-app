@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.wms.api.LoginResponse
 import com.example.wms.data.network.RetrofitInstance
 import com.example.wms.model.LoginRequest
 import kotlinx.coroutines.CoroutineScope
@@ -136,7 +137,7 @@ fun LoginScreen() {
                     when (loginState) {
                         is LoginState.Success -> {
                             val successState = loginState as LoginState.Success
-                            showToastAtTop(context, "Welcome ${successState.firstName}!")
+                            showToastAtTop(context, "Bonjour ${successState.firstName}!")
                             saveToken(successState.token, context)
                             context.startActivity(Intent(context, MainActivity::class.java))
                         }
@@ -199,11 +200,13 @@ private fun loginUser(
                         onStateChange(LoginState.Error.ValidationError(response.errors))
                     }
                     response.token.isNotEmpty() -> {
+                        saveUserDetails(response, context)
                         onStateChange(LoginState.Success(
                             userId = response.userId,
                             firstName = response.firstName,
                             token = response.token
                         ))
+
                     }
                     else -> {
                         onStateChange(LoginState.Error.UnknownError(
@@ -238,4 +241,17 @@ private fun loginUser(
 private fun saveToken(token: String, context: Context) {
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     sharedPreferences.edit().putString("auth_token", token).apply()
+}
+
+
+private fun saveUserDetails(response: LoginResponse, context: Context) {
+    val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    with(sharedPreferences.edit()) {
+        putInt("userId", response.userId)
+        putString("firstName", response.firstName)
+        putString("lastName", response.lastName)
+        putString("email", response.email)
+        putString("token", response.token)
+        apply()
+    }
 }
