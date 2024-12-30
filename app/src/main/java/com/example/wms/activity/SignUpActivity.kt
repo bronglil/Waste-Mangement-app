@@ -259,20 +259,17 @@ fun signUpUser(
                         // Handle validation errors
                         onStateChange(SignUpState.Error.ValidationError(response.errors))
                     }
-                    response.token != null -> {
-                        // Handle success case
-                        onStateChange(SignUpState.Success(
-                            firstName = response.firstName ?: "",
-                            lastName = response.lastName ?: "",
-                            email = response.email ?: "",
-                            token = response.token
-                        ))
-                    }
+
                     else -> {
-                        // Handle unexpected response
-                        onStateChange(SignUpState.Error.UnknownError(
-                            response.message ?: "Unknown error occurred"
-                        ))
+                        // Handle success case
+                        onStateChange(
+                            SignUpState.Success(
+                                firstName = response.firstName ?: "",
+                                lastName = response.lastName ?: "",
+                                email = response.email ?: "",
+                                token = response.token
+                            )
+                        )
                     }
                 }
             }

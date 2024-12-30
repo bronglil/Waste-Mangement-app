@@ -1,173 +1,343 @@
 package com.example.wms.activity
 
 import android.content.Intent
-import android.os.Bundle
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.icu.text.SimpleDateFormat
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.wms.data.network.RetrofitInstance
 import com.example.wms.model.Bin
 import com.example.wms.ui.NavigationMenu
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.Locale
 
-class AllBinsActivity : ComponentActivity() {
-    private val TAG = "AllBinsActivity"
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopBar() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            TopAppBar(
+                title = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Animated Icon Container
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    CircleShape
+                                )
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MyApp {
-                BinListScreen()
-            }
-        }
-    }
+                        // Title and Subtitle
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                "Smart Bins Monitor",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Real-time Waste Management",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
 
-    @Composable
-    fun MyApp(content: @Composable () -> Unit) {
-        MaterialTheme {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                content()
-            }
-        }
-    }
-
-    @Composable
-    fun BinListScreen() {
-        var binList by remember { mutableStateOf<List<Bin>?>(null) }
-        var isLoading by remember { mutableStateOf(true) }
-        var errorMessage by remember { mutableStateOf("") }
-        var activeScreen by remember { mutableStateOf("Home") }
-
-        // Fetch data on screen load
-        LaunchedEffect(Unit) {
-            fetchBinList { result, error ->
-                binList = result
-                errorMessage = error ?: ""
-                isLoading = false
-            }
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                } else if (binList != null) {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(binList!!) { bin ->
-                            BinRow(bin)
+                        // Status Indicator
+                        Row(
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    RoundedCornerShape(16.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(Color.Green, CircleShape)
+                            )
+                            Text(
+                                "Live",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
-                } else {
-                    Text(
-                        text = "Error: $errorMessage",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+//            // Search Bar (Optional)
+//            SearchBar(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(horizontal = 16.dp, vertical = 8.dp),
+//                query = "",
+//                onQueryChange = { },
+//                onSearch = { },
+//                active = false,
+//                onActiveChange = { },
+//                placeholder = { Text("Search bins...") },
+//                leadingIcon = {
+//                    Icon(Icons.Default.Search, contentDescription = null)
+//                },
+//                colors = SearchBarDefaults.colors(
+//                    containerColor = MaterialTheme.colorScheme.surface,
+//                    dividerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+//                )
+//            ) { }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnhancedBinListScreen(navController: NavController) {
+    var binList by remember { mutableStateOf<List<Bin>?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf("") }
+    var activeScreen by remember { mutableStateOf("Bins") }
+
+    LaunchedEffect(Unit) {
+        fetchBinList { result, error ->
+            binList = result
+            errorMessage = error ?: ""
+            isLoading = false
+        }
+    }
+    val context = LocalContext.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+            TopBar()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
                     )
                 }
-            }
-
-            // Bottom Navigation Menu
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(0.dp)
-            ) {
-                NavigationMenu(activeScreen) { navigateTo ->
-                    activeScreen = navigateTo
-                    when (navigateTo) {
-                        "Home" -> {
-                            // Stay on current screen
-                        }
-                        "Profile" -> {
-                            startActivity(Intent(this@AllBinsActivity, UserProfileActivity::class.java))
-                        }
+            } else if (binList != null) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(binList!!) { bin ->
+                        BinCard(
+                            bin = bin,
+                            onClick = {
+                                navController.navigate("binDetails/${bin.id}") // Use navController
+                            }
+                        )
                     }
                 }
+            } else {
+                ErrorDisplay(errorMessage)
             }
         }
-    }
 
-    @Composable
-    fun BinRow(bin: Bin) {
-        val statusColor = when {
-            bin.status >= 80 -> Color.Red
-            bin.status >= 50 -> Color.Yellow
-            else -> Color.Green
+        // Enhanced Navigation Menu
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        ) {
+            NavigationMenu(
+                activeScreen = activeScreen,
+                onNavigate = { screen ->
+                    activeScreen = screen
+                    when (screen) {
+                        "Home" -> navController.navigate("main")
+                        "Bins" -> navController.navigate("bins")
+                        "Profile" -> navController.navigate("profile")
+                    }
+                }
+            )
         }
+    }
+}
 
-        Card(
+@Composable
+fun BinCard(bin: Bin, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .animateContentSize(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+//        colors = CardDefaults.cardColors(
+//            containerColor = MaterialTheme.colorScheme.surface
+//        )
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
-                .clickable {
-                    val intent = Intent(this@AllBinsActivity, SingleBinDetailsActivity::class.java)
-                    intent.putExtra("binId", bin.id.toInt()) // Pass bin ID to the details activity
-                    startActivity(intent)
-                },
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            shape = RoundedCornerShape(12.dp)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "Bin ID: ${bin.id}",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = null,
+                        tint = getStatusColor(bin.status),
+                        modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "${bin.status}%",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = statusColor
+                        text = "Bin #${bin.id}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
                     text = "Last Updated: ${bin.lastUpdated.formatDate()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6F)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+
+                LinearProgressIndicator(
+                    progress = bin.status / 100f,
+                    color = getStatusColor(bin.status),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(getStatusColor(bin.status).copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${bin.status}%",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = getStatusColor(bin.status),
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     }
+}
 
-    // Extension function for formatting the date and time
-    fun String.formatDate(): String {
-        return try {
-            val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
-            val outputFormat = java.text.SimpleDateFormat("MMM dd, yyyy hh:mm a", java.util.Locale.getDefault())
-            val date = inputFormat.parse(this)
-            if (date != null) outputFormat.format(date) else this
-        } catch (e: Exception) {
-            this
-        }
+
+@Composable
+fun ErrorDisplay(message: String) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            Icons.Default.Warning,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
     }
+}
+
+private fun getStatusColor(status: Int): Color {
+    return when {
+        status >= 80 -> Color(0xFFE53935)  // Red
+        status >= 50 -> Color(0xFFFFA726)  // Orange
+        else -> Color(0xFF66BB6A)  // Green
+    }
+}
+
+private fun String.formatDate(): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault())
+        val date = inputFormat.parse(this)
+        outputFormat.format(date ?: return this)
+    } catch (e: Exception) {
+        this
+    }
+}
 
     private fun fetchBinList(callback: (List<Bin>?, String?) -> Unit) {
         RetrofitInstance.api.getAllBins().enqueue(object : Callback<List<Bin>> {
@@ -175,15 +345,13 @@ class AllBinsActivity : ComponentActivity() {
                 if (response.isSuccessful) {
                     callback(response.body(), null)
                 } else {
-                    Log.e(TAG, "Request failed: ${response.code()}")
                     callback(null, "Request failed: ${response.code()}")
                 }
             }
 
             override fun onFailure(call: Call<List<Bin>>, t: Throwable) {
-                Log.e(TAG, "Error accessing API: ${t.message}")
                 callback(null, "Error: ${t.message}")
             }
         })
     }
-}
+

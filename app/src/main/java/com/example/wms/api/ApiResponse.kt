@@ -14,8 +14,10 @@ data class LoginResponse(
     val userRole: String = "",
     val token: String = "",
     val message: String? = null,
-    val errors: Map<String, String>? = null
-)
+    val errors: Map<String, String>? = null,
+    val role: String?
+) {
+}
 
 
 data class SignUpResponse(
@@ -34,6 +36,7 @@ data class UserData(
     val lastName: String,
     val contactNumber: String,
     val email: String,
-    val userRole: String,
+    val userRole: String?,
+    val role: String?,
     val token: String
 )

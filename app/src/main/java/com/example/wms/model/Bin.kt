@@ -7,5 +7,5 @@ data class Bin(
     val longitude: Double,
     val status: Int,
     val lastUpdated: String,
-    val sensorData: String
+    val sensorData: Any
 )
