@@ -1,5 +1,6 @@
 package com.example.wms.activity
 
+import NavigationMenu
 import android.content.Intent
 import android.icu.text.SimpleDateFormat
 import androidx.compose.animation.animateContentSize
@@ -29,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.wms.data.network.RetrofitInstance
 import com.example.wms.model.Bin
-import com.example.wms.ui.NavigationMenu
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response

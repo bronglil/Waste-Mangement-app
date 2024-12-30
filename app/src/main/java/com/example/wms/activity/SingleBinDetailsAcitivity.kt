@@ -25,7 +25,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BinDetailsScreen(binId: Int, onBack: () -> Unit) {
+fun BinDetailsScreen(binId: Int, onBack: () -> Unit,  onNavigateToMap: (Double, Double) -> Unit) {
     var binDetails by remember { mutableStateOf<BinDetails?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
@@ -68,7 +68,10 @@ fun BinDetailsScreen(binId: Int, onBack: () -> Unit) {
                     CircularProgressIndicator()
                 } else {
                     binDetails?.let { bin ->
-                        BinDetailsCard(bin)
+                        BinDetailsCard(bin, onNavigateToMap = {
+                            onNavigateToMap(bin.latitude, bin.longitude)
+                        }
+                        )
                     } ?: errorMessage.takeIf { it.isNotEmpty() }?.let {
                         Text("Error: $it", color = Color.Red)
                     }
@@ -79,7 +82,7 @@ fun BinDetailsScreen(binId: Int, onBack: () -> Unit) {
 }
 
 @Composable
-fun BinDetailsCard(bin: BinDetails) {
+fun BinDetailsCard(bin: BinDetails,  onNavigateToMap: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -105,7 +108,11 @@ fun BinDetailsCard(bin: BinDetails) {
             }
             Text("Sensor Data: $sensorDataDisplay", fontSize = 16.sp)
             Spacer(modifier = Modifier.height(16.dp))
-            LocationButton(bin.latitude, bin.longitude)
+            LocationButton(
+                bin.latitude,
+                bin.longitude,
+                onNavigateToMap = onNavigateToMap
+            )
         }
     }
 }
@@ -140,9 +147,13 @@ fun StatusBar(status: Int) {
 }
 
 @Composable
-fun LocationButton(latitude: Double, longitude: Double) {
+fun LocationButton(
+    latitude: Double,
+    longitude: Double,
+    onNavigateToMap: () -> Unit  // Add navigation callback
+) {
     Button(
-        onClick = { openMap(latitude, longitude) },
+        onClick = onNavigateToMap,  // Just call the navigation callback
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {

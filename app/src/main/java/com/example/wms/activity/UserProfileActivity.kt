@@ -1,8 +1,10 @@
 package com.example.wms.activity
 
+import NavigationMenu
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.navigation.NavHostController
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,7 +31,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun UserProfileScreen(viewModel: UserProfileViewModel, onEditClick: (UserData) -> Unit, onBackClick: () -> Unit) {
+fun UserProfileScreen(viewModel: UserProfileViewModel, onEditClick: (UserData) -> Unit, onBackClick: () -> Unit, navController: NavHostController) {
     val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -41,6 +43,7 @@ fun UserProfileScreen(viewModel: UserProfileViewModel, onEditClick: (UserData) -
 
     val userProfile by viewModel.userProfile.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -75,9 +78,13 @@ fun UserProfileScreen(viewModel: UserProfileViewModel, onEditClick: (UserData) -
             userProfile = userProfile,
             errorMessage = errorMessage,
             onBackClick = onBackClick,
-            onMenuClick = { scope.launch { drawerState.open() } }
+            onMenuClick = { scope.launch { drawerState.open() } },
+            navController = navController
         )
     }
+
+    // Enhanced Navigation Menu
+
 }
 
 @Composable
@@ -195,11 +202,13 @@ private fun ProfileContent(
     userProfile: UserData?,
     errorMessage: String?,
     onBackClick: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    navController: NavHostController
 ) {
     Box(
         modifier = Modifier.fillMaxSize().padding(2.dp)
     ) {
+        var activeScreen by remember { mutableStateOf("Bins") }
         when {
             errorMessage != null -> {
                 Text(
@@ -239,6 +248,24 @@ private fun ProfileContent(
                     ProfileDetails(userProfile)
                 }
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        ) {
+            NavigationMenu(
+                activeScreen = activeScreen,
+                onNavigate = { screen ->
+                    activeScreen = screen
+                    when (screen) {
+                        "Home" -> navController.navigate("main")
+                        "Bins" -> navController.navigate("bins")
+                        "Profile" -> navController.navigate("profile")
+                    }
+                }
+            )
         }
     }
 }
