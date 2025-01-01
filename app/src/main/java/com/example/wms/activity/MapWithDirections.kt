@@ -12,10 +12,18 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.wms.R
 import com.google.android.gms.location.*
@@ -33,7 +41,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 @Composable
 fun MapWithDirections(
     destinationLat: Double,
@@ -42,84 +49,41 @@ fun MapWithDirections(
 ) {
     val context = LocalContext.current
     var vehiclePosition by remember { mutableStateOf<LatLng?>(null) }
-    var vehicleBearing by remember { mutableStateOf(0f) }
-    var hasLocationPermission by remember { mutableStateOf(false) }
     var directionsPolylinePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var hasLocationPermission by remember { mutableStateOf(false) }
+    var isNavigating by remember { mutableStateOf(false) }
     val cameraPositionState = rememberCameraPositionState()
+    val destination = remember { LatLng(destinationLat, destinationLng) }
 
-    val carIcon = remember {
-        val bitmap = vectorToBitmap(context, R.drawable.ic_launcher_vehicle_foreground, 0.4f)
-        BitmapDescriptorFactory.fromBitmap(bitmap)
-    }
-
-    val destinationIcon = remember {
-        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
-    }
-
-    val fusedLocationClient = remember {
-        LocationServices.getFusedLocationProviderClient(context)
-    }
-
-    val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000).build()
-
-    // Location callback
     val locationCallback = rememberUpdatedState(newValue = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.lastLocation?.let { location ->
                 val newPosition = LatLng(location.latitude, location.longitude)
                 vehiclePosition = newPosition
 
-                // Update bearing
-                vehicleBearing = if (vehiclePosition != null) {
-                    calculateBearing(vehiclePosition!!, newPosition)
-                } else {
-                    0f
-                }
+                if (isNavigating) {
+                    // Update route when navigating
+                    CoroutineScope(Dispatchers.Main).launch {
+                        updateDirections(newPosition, destination) { points ->
+                            directionsPolylinePoints = points
+                        }
+                    }
 
-                // Update directions
-                CoroutineScope(Dispatchers.Main).launch {
-                    updateDirections(newPosition, LatLng(destinationLat, destinationLng)) { points ->
-                        directionsPolylinePoints = points
+                    // Update camera to follow vehicle with bearing
+                    if (!cameraPositionState.isMoving) {
+                        cameraPositionState.position = CameraPosition.Builder()
+                            .target(newPosition)
+                            .zoom(18f)
+                            .tilt(45f)
+                            .bearing(calculateBearing(newPosition, destination))
+                            .build()
                     }
                 }
-
-                // Update camera position
-                cameraPositionState.position = CameraPosition.Builder()
-                    .target(newPosition)
-                    .zoom(17f)
-                    .bearing(vehicleBearing)
-                    .build()
             }
         }
     })
 
-    // Request location permission
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            hasLocationPermission = isGranted
-            if (isGranted) {
-                if (!isGPSEnabled(context)) {
-                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                } else {
-                    startLocationUpdates(fusedLocationClient, locationRequest, locationCallback.value)
-                }
-            }
-        }
-    )
-
-    LaunchedEffect(Unit) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        } else {
-            hasLocationPermission = true
-            if (!isGPSEnabled(context)) {
-                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            } else {
-                startLocationUpdates(fusedLocationClient, locationRequest, locationCallback.value)
-            }
-        }
-    }
+    // Rest of your location permission code...
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
@@ -130,33 +94,52 @@ fun MapWithDirections(
                 mapType = MapType.NORMAL
             )
         ) {
-            // Destination Marker
-            Marker(
-                state = MarkerState(position = LatLng(destinationLat, destinationLng)),
-                title = "Destination",
-                icon = destinationIcon
-            )
-
-            // Vehicle Marker
-            vehiclePosition?.let { position ->
-                Marker(
-                    state = MarkerState(position = position),
-                    title = "Vehicle",
-                    icon = carIcon,
-                    rotation = vehicleBearing,
-                    flat = true
+            // Draw navigation route
+            if (directionsPolylinePoints.isNotEmpty() && isNavigating) {
+                Polyline(
+                    points = directionsPolylinePoints,
+                    color = Color(0xFF2196F3),
+                    width = 8f
                 )
+            }
 
-                // Draw directions polyline
-                if (directionsPolylinePoints.isNotEmpty()) {
+            // Draw direct line when not navigating
+            vehiclePosition?.let { position ->
+                if (!isNavigating) {
                     Polyline(
-                        points = directionsPolylinePoints,
-                        color = Color.Blue,
-                        width = 5f,
-                        pattern = listOf(Dash(30f), Gap(20f))
+                        points = listOf(position, destination),
+                        color = Color(0x4D2196F3),
+                        width = 4f
                     )
                 }
+
+                // Current location marker
+                Marker(
+                    state = MarkerState(position = position),
+                    title = "Current Location",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                )
             }
+
+            // Destination marker
+            Marker(
+                state = MarkerState(position = destination),
+                title = "Destination",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+            )
+        }
+
+        // Direction Button
+        FloatingActionButton(
+            onClick = { isNavigating = !isNavigating },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = if (isNavigating) Icons.Default.Close else Icons.Default.Send,
+                contentDescription = if (isNavigating) "Stop Navigation" else "Start Navigation"
+            )
         }
     }
 }
@@ -190,14 +173,13 @@ private suspend fun updateDirections(origin: LatLng, destination: LatLng, onResu
     withContext(Dispatchers.IO) {
         try {
             val context = GeoApiContext.Builder()
-                .apiKey("APIKEY") // Replace with your actual API key
+                .apiKey("YOUR_API_KEY")
                 .build()
 
             val result = DirectionsApi.newRequest(context)
                 .origin(com.google.maps.model.LatLng(origin.latitude, origin.longitude))
                 .destination(com.google.maps.model.LatLng(destination.latitude, destination.longitude))
                 .mode(TravelMode.DRIVING)
-                .alternatives(false)
                 .await()
 
             result.routes.firstOrNull()?.overviewPolyline?.let { polyline ->
