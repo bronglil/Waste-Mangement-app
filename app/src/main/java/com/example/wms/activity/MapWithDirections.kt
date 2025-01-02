@@ -5,19 +5,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.provider.Settings
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,22 +19,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.wms.R
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.Dash
-import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.DirectionsApi
 import com.google.maps.GeoApiContext
 import com.google.maps.android.compose.*
-import com.google.maps.internal.PolylineEncoding
 import com.google.maps.model.TravelMode
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import android.os.Looper
+import androidx.compose.material.icons.filled.Place
+
 @Composable
 fun MapWithDirections(
     destinationLat: Double,
@@ -48,42 +38,103 @@ fun MapWithDirections(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var vehiclePosition by remember { mutableStateOf<LatLng?>(null) }
     var directionsPolylinePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var isNavigating by remember { mutableStateOf(false) }
-    val cameraPositionState = rememberCameraPositionState()
+    var showGpsDialog by remember { mutableStateOf(false) }
+
     val destination = remember { LatLng(destinationLat, destinationLng) }
 
-    val locationCallback = rememberUpdatedState(newValue = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
-                val newPosition = LatLng(location.latitude, location.longitude)
-                vehiclePosition = newPosition
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(destination, 15f)
+    }
 
-                if (isNavigating) {
-                    // Update route when navigating
-                    CoroutineScope(Dispatchers.Main).launch {
-                        updateDirections(newPosition, destination) { points ->
-                            directionsPolylinePoints = points
-                        }
+    // GPS Dialog
+    if (showGpsDialog) {
+        AlertDialog(
+            onDismissRequest = { showGpsDialog = false },
+            title = { Text("Enable GPS") },
+            text = { Text("GPS is required for navigation. Please enable it in settings.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    showGpsDialog = false
+                }) {
+                    Text("Open Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGpsDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Location callback
+    val locationCallback = remember {
+        object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult.lastLocation?.let { location ->
+                    val newPosition = LatLng(location.latitude, location.longitude)
+                    vehiclePosition = newPosition
+
+                    if (vehiclePosition == null) {
+                        cameraPositionState.position = CameraPosition.fromLatLngZoom(newPosition, 15f)
                     }
 
-                    // Update camera to follow vehicle with bearing
-                    if (!cameraPositionState.isMoving) {
-                        cameraPositionState.position = CameraPosition.Builder()
-                            .target(newPosition)
-                            .zoom(18f)
-                            .tilt(45f)
-                            .bearing(calculateBearing(newPosition, destination))
-                            .build()
+                    if (isNavigating) {
+                        scope.launch {
+                            updateDirections(newPosition, destination) { points ->
+                                directionsPolylinePoints = points
+                            }
+                        }
+
+                        if (!cameraPositionState.isMoving) {
+                            cameraPositionState.position = CameraPosition.Builder()
+                                .target(newPosition)
+                                .zoom(18f)
+                                .tilt(45f)
+                                .build()
+                        }
                     }
                 }
             }
         }
-    })
+    }
 
-    // Rest of your location permission code...
+    // Permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasLocationPermission = permissions.values.all { it }
+        if (hasLocationPermission) {
+            checkGpsAndStartUpdates(context, locationCallback) { showGpsDialog = true }
+        }
+    }
+
+    // Check permissions on launch
+    LaunchedEffect(Unit) {
+        when {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                hasLocationPermission = true
+                checkGpsAndStartUpdates(context, locationCallback) { showGpsDialog = true }
+            }
+            else -> {
+                permissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
@@ -94,7 +145,7 @@ fun MapWithDirections(
                 mapType = MapType.NORMAL
             )
         ) {
-            // Draw navigation route
+            // Navigation route
             if (directionsPolylinePoints.isNotEmpty() && isNavigating) {
                 Polyline(
                     points = directionsPolylinePoints,
@@ -103,7 +154,7 @@ fun MapWithDirections(
                 )
             }
 
-            // Draw direct line when not navigating
+            // Direct line and markers
             vehiclePosition?.let { position ->
                 if (!isNavigating) {
                     Polyline(
@@ -113,7 +164,6 @@ fun MapWithDirections(
                     )
                 }
 
-                // Current location marker
                 Marker(
                     state = MarkerState(position = position),
                     title = "Current Location",
@@ -121,7 +171,6 @@ fun MapWithDirections(
                 )
             }
 
-            // Destination marker
             Marker(
                 state = MarkerState(position = destination),
                 title = "Destination",
@@ -129,51 +178,73 @@ fun MapWithDirections(
             )
         }
 
-        // Direction Button
-        FloatingActionButton(
-            onClick = { isNavigating = !isNavigating },
+        // Navigation buttons
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                imageVector = if (isNavigating) Icons.Default.Close else Icons.Default.Send,
-                contentDescription = if (isNavigating) "Stop Navigation" else "Start Navigation"
-            )
+            FloatingActionButton(
+                onClick = { isNavigating = !isNavigating }
+            ) {
+                Icon(
+                    imageVector = if (isNavigating) Icons.Default.Close else Icons.Default.Send,
+                    contentDescription = if (isNavigating) "Stop Navigation" else "Start Navigation"
+                )
+            }
+
+            FloatingActionButton(
+                onClick = {
+                    vehiclePosition?.let {
+                        val uri = "google.navigation:q=${destinationLat},${destinationLng}&mode=d"
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri))
+                        intent.setPackage("com.google.android.apps.maps")
+                        context.startActivity(intent)
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Place,
+                    contentDescription = "Open in Google Maps"
+                )
+            }
         }
     }
 }
 
-// Check if GPS is enabled
-private fun isGPSEnabled(context: Context): Boolean {
-    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-}
-
-// Start location updates
-@SuppressLint("MissingPermission")
-private fun startLocationUpdates(
-    fusedLocationClient: FusedLocationProviderClient,
-    locationRequest: LocationRequest,
-    locationCallback: LocationCallback
+private fun checkGpsAndStartUpdates(
+    context: Context,
+    locationCallback: LocationCallback,
+    onGpsDisabled: () -> Unit
 ) {
-    try {
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
-    } catch (e: Exception) {
-        e.printStackTrace()
+    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        startLocationUpdates(context, locationCallback)
+    } else {
+        onGpsDisabled()
     }
 }
 
-// Update directions using the Google Directions API
+@SuppressLint("MissingPermission")
+private fun startLocationUpdates(context: Context, locationCallback: LocationCallback) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    val locationRequest = LocationRequest.Builder(5000L)
+        .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+        .build()
+
+    fusedLocationClient.requestLocationUpdates(
+        locationRequest,
+        locationCallback,
+        Looper.getMainLooper()
+    )
+}
+
 private suspend fun updateDirections(origin: LatLng, destination: LatLng, onResult: (List<LatLng>) -> Unit) {
     withContext(Dispatchers.IO) {
         try {
             val context = GeoApiContext.Builder()
-                .apiKey("YOUR_API_KEY")
+                .apiKey("APIKEY")  // Replace with your API key
                 .build()
 
             val result = DirectionsApi.newRequest(context)
@@ -182,9 +253,12 @@ private suspend fun updateDirections(origin: LatLng, destination: LatLng, onResu
                 .mode(TravelMode.DRIVING)
                 .await()
 
-            result.routes.firstOrNull()?.overviewPolyline?.let { polyline ->
-                val decodedPath = PolylineEncoding.decode(polyline.encodedPath)
-                val points = decodedPath.map { LatLng(it.lat, it.lng) }
+            result.routes.firstOrNull()?.legs?.flatMap { leg ->
+                leg.steps.flatMap { step ->
+                    com.google.maps.internal.PolylineEncoding.decode(step.polyline.encodedPath)
+                        .map { LatLng(it.lat, it.lng) }
+                }
+            }?.let { points ->
                 withContext(Dispatchers.Main) {
                     onResult(points)
                 }
@@ -193,30 +267,4 @@ private suspend fun updateDirections(origin: LatLng, destination: LatLng, onResu
             e.printStackTrace()
         }
     }
-}
-
-// Convert vector drawable to bitmap
-private fun vectorToBitmap(context: Context, drawableResId: Int, scaleFactor: Float = 1f): Bitmap {
-    val drawable = ContextCompat.getDrawable(context, drawableResId)
-    val width = (drawable!!.intrinsicWidth * scaleFactor).toInt()
-    val height = (drawable.intrinsicHeight * scaleFactor).toInt()
-
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, width, height)
-    drawable.draw(canvas)
-    return bitmap
-}
-
-// Calculate bearing between two LatLng points
-private fun calculateBearing(start: LatLng, end: LatLng): Float {
-    val lat1 = Math.toRadians(start.latitude)
-    val lat2 = Math.toRadians(end.latitude)
-    val dLng = Math.toRadians(end.longitude - start.longitude)
-
-    val y = Math.sin(dLng) * Math.cos(lat2)
-    val x = Math.cos(lat1) * Math.sin(lat2) -
-            Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
-
-    return Math.toDegrees(Math.atan2(y, x)).toFloat()
 }

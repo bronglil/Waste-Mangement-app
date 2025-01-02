@@ -14,20 +14,20 @@
 <!--        <activity android:name=".activity.SingleBinDetailsActivity" android:exported="true" android:label="@string/title_activity_single_bin_details_acitivity" android:theme="@style/Theme.WMS">-->
 <!--        </activity>-->
         <activity android:name=".activity.SignUpActivity" android:exported="true" android:label="@string/title_activity_sign_up" android:theme="@style/Theme.WMS">
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.MAIN" />-->
-<!--                <category android:name="android.intent.category.LAUNCHER" />-->
-<!--            </intent-filter>-->
-        </activity>
-        <activity android:name=".activity.MainActivity" android:exported="true" android:theme="@style/Theme.WMS" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".activity.MainActivity" android:exported="true" android:theme="@style/Theme.WMS" >
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+        </activity>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="API_key" />
+            android:value="APIKEY" />
 
     </application>
 
