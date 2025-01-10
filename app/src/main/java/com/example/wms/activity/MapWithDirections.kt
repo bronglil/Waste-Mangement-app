@@ -244,7 +244,7 @@ private suspend fun updateDirections(origin: LatLng, destination: LatLng, onResu
     withContext(Dispatchers.IO) {
         try {
             val context = GeoApiContext.Builder()
-                .apiKey("APIKEY")  // Replace with your API key
+                .apiKey("AIzaSyCI511lqrO142cdiXYLB2ccGz19IvFEZ00")  // Replace with your API key
                 .build()
 
             val result = DirectionsApi.newRequest(context)
