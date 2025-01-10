@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,6 +66,7 @@ data class LoginResponse(
     val errors: Map<String, String>? = null
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen() {
     var email by remember { mutableStateOf("") }
@@ -89,17 +91,37 @@ fun LoginScreen() {
                     .padding(16.dp)
                     .fillMaxWidth()
             ) {
-                InputField(
+                TextField(
                     value = email,
-                    label = "Email",
-                    keyboardType = KeyboardType.Email
-                ) { email = it }
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.textFieldColors(
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = Color.Gray,
+                        containerColor = Color.Transparent
+                    )
+                )
 
-                InputField(
+                TextField(
                     value = password,
-                    label = "Password",
-                    keyboardType = KeyboardType.Password
-                ) { password = it }
+                    onValueChange = { password = it },
+                    label = { Text("Password") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.textFieldColors(
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = Color.Gray,
+                        containerColor = Color.Transparent
+                    )
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -132,7 +154,6 @@ fun LoginScreen() {
                         }
                 )
 
-                // Handle different states
                 LaunchedEffect(loginState) {
                     when (loginState) {
                         is LoginState.Success -> {
