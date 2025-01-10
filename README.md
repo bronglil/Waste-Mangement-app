@@ -48,10 +48,13 @@ To set up the repository for development, follow these steps:
     ```
     The APK will be located in the `app/build/outputs/apk/debug/` directory
 
-4. **Add Values** 
-Go to AndroidManifest.xml file and add API key.
-Go to RetrofitInstance and add your Ip address.
-Go to res/xml/network_security_config.xml file an update Ip address.
+4. **Add Values** :
+ - Go to AndroidManifest.xml file and add API key.
+   
+ - Go to RetrofitInstance and add your Ip address.
+    ```baseUrl("http://{{YOUR_IP_ADDRESS}}:8080/") ```
+
+ - Go to res/xml/network_security_config.xml file an update Ip address.
 
 ### Required Software
 - **Android Studio** Latest version
