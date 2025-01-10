@@ -34,7 +34,7 @@ To set up the repository for development, follow these steps:
 
 1. **Clone the repository** from GitHub:
     ```bash
-    git clone git@github.com:Irfan-Ullah-cs/Waste-Mangement-System.git
+    git clone git@github.com:bronglil/Waste-Mangement-app.git
     cd Waste-Mangement-System/android
     ```
 2. **Open the Android project in Android Studio**:
@@ -47,6 +47,11 @@ To set up the repository for development, follow these steps:
     ./gradlew assembleDebug
     ```
     The APK will be located in the `app/build/outputs/apk/debug/` directory
+
+4. **Add Values** 
+Go to AndroidManifest.xml file and add API key.
+Go to RetrofitInstance and add your Ip address.
+Go to res/xml/network_security_config.xml file an update Ip address.
 
 ### Required Software
 - **Android Studio** Latest version
