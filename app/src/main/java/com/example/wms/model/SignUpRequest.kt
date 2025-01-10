@@ -6,7 +6,7 @@ data class SignUpRequest(
     val contactNumber: String,
     val email: String,
     val password: String,
-    val userRole: String = "DRIVER",
-    val userStatus: String = "PENDING"
+    val userRole: String = "driver",
+    val userStatus: String = "pending"
 )
 

@@ -83,8 +83,6 @@ fun UserProfileScreen(viewModel: UserProfileViewModel, onEditClick: (UserData) -
         )
     }
 
-    // Enhanced Navigation Menu
-
 }
 
 @Composable
