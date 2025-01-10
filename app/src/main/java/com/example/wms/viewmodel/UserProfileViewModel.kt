@@ -21,7 +21,7 @@ class UserProfileViewModel : ViewModel() {
     fun fetchUserProfile(userId: Int) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.api.getDriverDetails(6)
+                val response = RetrofitInstance.api.getDriverDetails(userId)
                 val userData = UserData(
                     firstName = response.firstName,
                     lastName = response.lastName,

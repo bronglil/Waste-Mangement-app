@@ -13,7 +13,7 @@
         <activity android:name=".activity.LoginActivity" android:exported="false" android:label="@string/title_activity_login" android:theme="@style/Theme.WMS" />
 <!--        <activity android:name=".activity.SingleBinDetailsActivity" android:exported="true" android:label="@string/title_activity_single_bin_details_acitivity" android:theme="@style/Theme.WMS">-->
 <!--        </activity>-->
-        <activity android:name=".activity.SignUpActivity" android:exported="false" android:label="@string/app_name" android:theme="@style/Theme.WMS">
+        <activity android:name=".activity.SignUpActivity" android:exported="true" android:label="@string/app_name" android:theme="@style/Theme.WMS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
